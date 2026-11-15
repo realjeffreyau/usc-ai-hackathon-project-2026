@@ -23,16 +23,16 @@ test('manifest: MV3, scoped to webreg.usc.edu, no permissions, no remote code', 
   for (const size of ['16', '48', '128']) assert.ok(manifest.icons[size]);
 });
 
-const own = ['content.js', 'popup.js', 'demo.js', 'src/panel.js', 'src/fixtures.js', 'src/ai.js', 'src/webreg.js'];
+const own = ['content.js', 'popup.js', 'demo.js', 'src/panel.js', 'src/fixtures.js', 'src/ai.js', 'src/webreg.js', 'src/board.js', 'src/programs.js'];
 test('extension code: no network except its own bundled assets, no storage, logging, eval, or HTML injection', () => {
-  const banned = /\b(XMLHttpRequest|sendBeacon|WebSocket|EventSource|localStorage|sessionStorage|indexedDB|caches|document\.cookie|console\.|eval\s*\(|new Function|innerHTML|outerHTML|insertAdjacentHTML|document\.write|chrome\.(storage|cookies|webRequest|history|downloads|scripting|identity))\b/;
+  const banned = /\b(XMLHttpRequest|sendBeacon|WebSocket|EventSource|localStorage|sessionStorage|indexedDB|caches|document\.cookie|console\.|eval\s*\(|new Function|innerHTML|outerHTML|insertAdjacentHTML|document\.write|chrome\.(storage|cookies|webRequest|history|downloads|scripting|identity))\b|\bsessionStorage\b/;
   for (const name of own) {
     const hit = read(ext, name).split('\n').findIndex(line => banned.test(line.replace(/\/\/.*$/, '')));
     assert.equal(hit, -1, `${name}:${hit + 1} uses a banned API`);
   }
   // fetch is allowed only for the extension's own CSS and font, resolved relative to the module.
   const fetches = own.flatMap(name => read(ext, name).split('\n').filter(line => /\bfetch\(/.test(line)).map(line => `${name}: ${line.trim()}`));
-  assert.ok(fetches.every(line => /fetch\((?:new URL\('\.\/(?:panel\.css|vendor\/dm-sans\.woff2)', import\.meta\.url\)|programUrl\((?:'index'|id)\))\)/.test(line)), fetches.join('\n'));
+  assert.ok(fetches.every(line => /fetch\((new URL\('\.\/(panel\.css|vendor\/dm-sans\.woff2)', import\.meta\.url\)|programUrl\(('index'|id))\)/.test(line)), fetches.join('\n'));
 });
 
 test('extension never clicks, submits or edits WebReg; only src/webreg.js reads the page, and it is read-only', () => {
@@ -53,7 +53,7 @@ test('extension never clicks, submits or edits WebReg; only src/webreg.js reads 
 });
 
 test('shared modules in extension/src are in sync with dist (run: node scripts/build-extension.mjs)', () => {
-  for (const file of ['audit.js', 'planner.js', 'logic.js', 'catalog.js', 'sample.js', 'webreg.js', 'ge.js', 'board.js', 'programs.js', 'panel.js', 'ai.js']) {
+  for (const file of ['audit.js', 'planner.js', 'logic.js', 'catalog.js', 'sample.js', 'webreg.js', 'ge.js', 'programs.js', 'board.js', 'panel.js', 'panel.css', 'fixtures.js', 'ge-data.js', 'ai.js']) {
     assert.equal(read(ext, 'src/' + file), read(dist, file), file);
   }
 });

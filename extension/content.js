@@ -10,7 +10,7 @@
       if (message.demo) { const { mountPlanner } = await import(chrome.runtime.getURL('src/panel.js')); await mountPlanner({ demo: true }); }
       else planner.open();
       reply({ ok: true });
-    }).catch(() => reply({ ok: false }));
+    }).catch(error => reply({ ok: false, error: String(error?.message ?? error).slice(0, 160) }));
     return true; // keep the message channel open for the async reply
   });
 })();

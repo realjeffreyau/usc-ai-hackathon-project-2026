@@ -37,5 +37,5 @@ export function start(port = Number(process.env.PORT ?? 8080)) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const server = await start();
-  console.log(`Trojan Planner running at http://127.0.0.1:${server.address().port}`);
+  console.log(`TroyPlan running at http://127.0.0.1:${server.address().port}`);
 }

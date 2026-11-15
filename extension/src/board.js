@@ -65,7 +65,7 @@ export function buildBoard({ rows = [], past = [], registered = [], planned = []
         const code = child.title.split(' · ')[0].split(' or ')[0];
         const key = keyOf(code);
         if (completedKeys.has(key) || plannedKeys.has(key)) continue;
-        slots.push({ key, code, title: child.title.split(' · ').slice(1).join(' · ').replace(/ \(or .*\)$/, ''), units: child.units || 4, req: row.group ?? row.title });
+        slots.push({ key, code, title: child.title.split(' · ').slice(1).join(' · ').replace(/ \(or .*\)$/, ''), units: child.units ?? 4, req: row.group ?? row.title });
       }
     }
   }
@@ -104,17 +104,22 @@ export function buildBoard({ rows = [], past = [], registered = [], planned = []
   const free = [];
   for (const slot of queue) { const to = moves[slot.key]; if (to && terms.has(to) && termIndex(to) > termIndex(PLAN_TERM)) place(slot, to); else free.push(slot); }
   const ready = (slot, label) => {
-    const { prereq } = rulesFor(slot.key);
-    if (!prereq.length) return true;
+    const { prereq, coreq } = rulesFor(slot.key);
+    if (!prereq.length && !coreq.length) return true;
     const before = new Set([...completedKeys, ...[...placedAt].filter(([, at]) => termIndex(at) < termIndex(label)).map(([key]) => key)]);
-    return meets(prereq, before);
+    const upTo = new Set([...completedKeys, ...[...placedAt].filter(([, at]) => termIndex(at) <= termIndex(label)).map(([key]) => key)]);
+    return meets(prereq, before) && meets(coreq, upTo);
   };
   let remaining = free.slice();
   for (const label of FUTURE_TERMS) {
     if (!remaining.length) break;
-    for (const slot of [...remaining]) {
-      if (used(label) + slot.units > load || !ready(slot, label)) continue;
-      place(slot, label); remaining = remaining.filter(other => other !== slot);
+    // Repeat the pass so a course whose corequisite lands later in the same term is still placed there.
+    for (let again = true; again;) {
+      again = false;
+      for (const slot of [...remaining]) {
+        if (used(label) + slot.units > load || !ready(slot, label)) continue;
+        place(slot, label); remaining = remaining.filter(other => other !== slot); again = true;
+      }
     }
   }
   // Open electives fill any remaining degree units so the last term matches the units-based projection.

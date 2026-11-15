@@ -126,12 +126,16 @@ function loadAudit(audit, { demo, profile }) {
   render();
 }
 
-function loadSample() {
+let booted = false;
+function startDemo(message) {
   loadAudit(DEMO_PROFILE.audit, { demo: true, profile: DEMO_PROFILE });
   state.baseAudit = DEMO_PROFILE.audit;
-  chooseProgram('major', 32049); // the fictional student is a Biomedical Engineering (BS) major
-  say('Sample audit loaded. It is fictional.');
+  chooseProgram('major', 32049, !message || state.shell === 'page'); // the fictional student is a Biomedical Engineering (BS) major
+  if (message && !(state.shell === 'page' && !booted)) say(message); // no toast over the first screen of the website
+  booted = true;
 }
+
+function loadSample() { startDemo('Sample audit loaded. It is fictional.'); }
 
 function clearAudit() { clearMarks(); state = { ...fresh(), open: true, shell: state.shell, view: state.view, wide: state.wide, mode: state.mode }; render(); }
 
@@ -264,12 +268,12 @@ function applyPrograms() {
     : base;
 }
 
-async function chooseProgram(kind, id) {
+async function chooseProgram(kind, id, quiet = false) {
   if (!id) { state[kind] = null; }
   else { try { state[kind] = await loadProgramData(id); } catch { say('That program could not be loaded.'); return; } }
   state.moves = {};
   applyPrograms();
-  say(id ? `${state[kind].name} requirements loaded from the ${state[kind].catalog} catalogue.` : `${kind === 'major' ? 'Major' : 'Minor'} cleared.`);
+  if (!quiet) say(id ? `${state[kind].name} requirements loaded from the ${state[kind].catalog}.` : `${kind === 'major' ? 'Major' : 'Minor'} cleared.`);
   render();
 }
 
@@ -289,11 +293,13 @@ function programField(kind, label) {
 function programCard() {
   ensurePrograms();
   const label = [state.major?.name, state.minor ? `${state.minor.name}` : null].filter(Boolean).join(' + ');
-  return h('details', { class: 'card more programs', open: state.shell === 'page' && !state.major },
-    h('summary', {}, label ? `Program: ${label}` : 'Choose your major and minor'),
+  // Stays open while the student is choosing (picking a major re-renders the page); starts open on the website until a major is set.
+  const open = state.programsOpen ?? (state.shell === 'page' && !state.major);
+  return h('details', { class: 'card more programs', open },
+    h('summary', { onclick: event => { state.programsOpen = !event.currentTarget.parentElement.open; } }, label ? `Program: ${label}` : 'Choose your major and minor'),
     programIndex === false ? h('p', { class: 'status-err' }, 'The program list could not be loaded.') : null,
     programField('major', 'Major'), programField('minor', 'Minor'),
-    h('p', { class: 'small muted' }, 'Requirements come from the ', ext(programIndex?.source ?? 'https://catalogue.usc.edu/', `${programIndex?.catalog ?? '2026-2027'} USC Catalogue`, 'USC Catalogue (opens a new tab)'), ' snapshot bundled with TroyPlan. Statuses use the courses you have completed or are taking.'));
+    h('p', { class: 'small muted' }, 'Requirements come from the ', ext(programIndex?.source ?? 'https://catalogue.usc.edu/', programIndex?.catalog ?? '2026-2027 USC Catalogue', 'USC Catalogue (opens a new tab)'), ' snapshot bundled with TroyPlan. Statuses use the courses you have completed or are taking.'));
 }
 
 // ---- GE Finder ----------------------------------------------------------------------------
@@ -318,6 +324,7 @@ function runGE() {
   state.ge.result = findGE({
     category: state.ge.category, courses: source.courses, ratings: source.ratings, schedule: geSchedule(), prefs: state.prefs,
     completed: state.confirmed, source: source.source, ratingLabel: source.ratingLabel, unratedNote: source.unrated,
+    scheduleKnown: state.mode === 'demo' || registered().length > 0,
   });
 }
 
@@ -372,8 +379,7 @@ function setMode(mode, { quiet = false } = {}) {
   clearMarks();
   state = { ...fresh(), open: true, shell: state.shell, wide: state.wide, view: state.view, mode };
   if (mode === 'demo') {
-    loadAudit(DEMO_PROFILE.audit, { demo: true, profile: DEMO_PROFILE });
-    if (!quiet) say('Demo data is on. Everything here is fictional.');
+    startDemo(quiet ? '' : 'Demo data is on. Everything here is fictional.');
     return;
   }
   render();
@@ -585,6 +591,24 @@ function importForm() {
     state.importNote ? h('p', { class: state.importBusy ? 'muted' : 'status-err', role: 'status' }, state.importNote) : null);
 }
 
+// Website only: a short walkthrough of the sample student, one button per step. Each step uses the same plan the tabs share.
+function guidedDemo() {
+  if (state.shell !== 'page' || state.mode !== 'demo') return null;
+  const steps = [
+    ['See the four-year plan', 'Terms, units, and what is still open.', () => setView('four')],
+    ['Fill an open GE slot', 'Compare GE-B courses by time fit and instructor rating.', () => startGE('GE-B', PLAN_TERM)],
+    ['Check for conflicts', 'Adds a sample GE, loads a sample myCourseBin, and shows the overlap to swap.', () => {
+      if (!plannedGE('GE-B')) { state.ge.category = 'GE-B'; state.ge.term = PLAN_TERM; runGE(); const best = state.ge.result?.viable?.[0]; if (best) addGE(best); }
+      state.view = 'plan'; state.planView = 'schedule'; loadSampleBin();
+    }],
+  ];
+  return h('details', { class: 'card more guided', open: state.guidedOpen ?? true },
+    h('summary', { onclick: event => { state.guidedOpen = !event.currentTarget.parentElement.open; } }, 'Take the sample tour'),
+    h('p', { class: 'small muted' }, 'A fictional student is already loaded. Each step jumps to the real screen.'),
+    h('ol', { class: 'tour' }, steps.map(([title, text, run], i) => h('li', {},
+      h('button', { class: 'btn light sm', type: 'button', 'data-fk': `tour-${i + 1}`, onclick: run }, title), h('span', { class: 'small muted' }, ' ' + text)))));
+}
+
 function renderProgress() {
   const view = ui.progress;
   if (!state.audit) {
@@ -613,6 +637,7 @@ function renderProgress() {
   const open = rows.filter(row => effectiveStatus(row) === 'remaining').sort((a, b) => Number(Boolean(L.geCategoryOf(b.title))) - Number(Boolean(L.geCategoryOf(a.title))));
   const rest = [['planned', 'Planned this term'], ['progress', 'In progress'], ['complete', 'Complete']].map(([status, title]) => [title, rows.filter(row => effectiveStatus(row) === status)]).filter(([, list]) => list.length);
   fill(view,
+    guidedDemo(),
     programCard(),
     h('div', { class: 'between who' },
       h('p', {}, h('b', {}, state.profile?.name ?? 'Degree audit'), h('span', { class: 'muted' }, ' ' + (state.profile?.detail ?? ''))),
@@ -730,7 +755,7 @@ function renderPlan() {
   const view = ui.plan;
   const nav = planSubnav();
   if (state.planView === 'ge') { fill(view, nav, askCard(), ...geView()); return; }
-  if (!state.audit && !state.webreg) {
+  if (!state.audit && !state.webreg && !hasPlanned()) {
     fill(view, nav,
       onCourseBin() ? h('section', { class: 'card', 'aria-labelledby': 'tp-live-h' }, h('h3', { id: 'tp-live-h' }, 'Plan from your myCourseBin'), h('p', { class: 'muted' }, 'Read the classes saved on this page, then say what you want. Nothing is clicked or changed.'), h('button', { class: 'btn primary', type: 'button', 'data-fk': 'read-bin', onclick: readFromPage }, 'Read my myCourseBin'))
         : onWebReg() ? h('section', { class: 'card', 'aria-labelledby': 'tp-live-h' }, h('h3', { id: 'tp-live-h' }, 'Plan from your real classes'), h('p', { class: 'muted' }, 'Open your myCourseBin in WebReg and TroyPlan can read the classes saved there.'), h('a', { class: 'btn light', href: '/CourseBin' }, 'Open myCourseBin')) : null,
@@ -1194,31 +1219,113 @@ const allBoxes = board => board.terms.flatMap(term => term.boxes.map(box => ({ .
 function selectBox(id) { state.boardSel = id; render(); focusKey('bd-head'); }
 function closeBox() { const id = state.boardSel; state.boardSel = null; render(); focusKey(`bc-${safeKey(id)}`); }
 
-function moveBox(box, term) {
+const reducedMotion = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
+const dragRules = box => box.movable && (box.kind === 'ge-slot' || box.status === 'estimate');
+const dragTerms = box => (box.kind === 'ge-slot' ? [PLAN_TERM, ...FUTURE_TERMS] : FUTURE_TERMS).filter(label => rootQuery(`.bterm[data-term="${label}"]`));
+
+function moveBox(box, term, fromRect = null) {
+  if (state.moves[box.key] === term || (!state.moves[box.key] && box.term === term)) return;
   state.moves[box.key] = term;
   const board = boardData();
   const moved = allBoxes(board).find(b => b.id === box.id || b.key === box.key);
   say(`${box.code} moved to ${term}.${moved?.issue ? ` Prerequisite issue: ${moved.issue}` : ' No prerequisite issues.'}`);
   render();
   focusKey(`bc-${safeKey(box.id)}`);
+  const el = ui.root.activeElement;
+  if (fromRect && el?.animate && !reducedMotion()) {
+    const to = el.getBoundingClientRect();
+    el.animate([{ transform: `translate(${fromRect.left - to.left}px, ${fromRect.top - to.top}px) scale(1.05) rotate(-1.5deg)` }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2,.9,.3,1.15)' });
+  }
+}
+
+// Tiles: press and drag a movable card onto another term. Mouse and pen start at once; touch needs a short hold so scrolling still works.
+// The keyboard alternative is Alt + Left/Right (or the "Move to another term" form in the details).
+let justDropped = false; // the click that follows a drop must not open the details
+function dragStart(event, box) {
+  if (!dragRules(box) || (event.pointerType === 'mouse' && event.button !== 0)) return;
+  const card = event.currentTarget, sx = event.clientX, sy = event.clientY, touch = event.pointerType === 'touch';
+  const origin = card.getBoundingClientRect();
+  const valid = new Set(dragTerms(box));
+  let ghost = null, over = null, timer = null, armed = !touch, last = { clientX: sx, clientY: sy }, scroller = null;
+  const surface = ui.root.querySelector('.tp');
+  const block = e => { if (ghost && e.cancelable) e.preventDefault(); };
+  const column = (x, y) => ui.root.elementsFromPoint(x, y).find(el => el.classList?.contains('bterm') && el.dataset.term);
+  const mark = label => {
+    if (over === label) return; over = label;
+    for (const el of ui.root.querySelectorAll('.bterm[data-term]')) el.classList.toggle('drop-over', el.dataset.term === label && valid.has(label));
+  };
+  const begin = () => {
+    ghost = card.cloneNode(true);
+    ghost.removeAttribute('data-fk'); ghost.setAttribute('aria-hidden', 'true'); ghost.tabIndex = -1;
+    ghost.classList.add('ghost');
+    ghost.style.width = `${origin.width}px`;
+    surface.append(ghost);
+    card.classList.add('dragging');
+    surface.classList.add('is-dragging');
+    for (const el of ui.root.querySelectorAll('.bterm[data-term]')) el.classList.add(valid.has(el.dataset.term) ? 'drop-ok' : 'drop-no');
+    say(`Dragging ${box.code}. Drop it on another term.`);
+    // Hold near the top or bottom edge to scroll the page while dragging.
+    scroller = setInterval(() => {
+      const edge = 80, y = last.clientY;
+      const dy = y > innerHeight - edge ? 16 : y < edge ? -16 : 0;
+      if (dy) { scrollBy(0, dy); place(last); mark(column(last.clientX, last.clientY)?.dataset.term ?? null); }
+    }, 16);
+  };
+  const place = e => { ghost.style.transform = `translate(${e.clientX - origin.width / 2}px, ${e.clientY - 24}px) rotate(-2deg) scale(1.04)`; };
+  const finish = commit => {
+    clearTimeout(timer); clearInterval(scroller);
+    removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', cancel); removeEventListener('touchmove', block);
+    if (!ghost) return false;
+    const rect = ghost.getBoundingClientRect();
+    ghost.remove(); card.classList.remove('dragging'); surface.classList.remove('is-dragging');
+    for (const el of ui.root.querySelectorAll('.bterm[data-term]')) el.classList.remove('drop-ok', 'drop-no', 'drop-over');
+    if (commit && over && valid.has(over)) moveBox(box, over, rect);
+    else if (commit && over) say(`${box.code} cannot go in ${over}.`);
+    return true;
+  };
+  const move = e => {
+    if (!ghost) {
+      if (Math.hypot(e.clientX - sx, e.clientY - sy) < (touch ? 10 : 5)) return;
+      if (!armed) { finish(false); return; }
+      begin();
+    }
+    last = e; place(e); mark(column(e.clientX, e.clientY)?.dataset.term ?? null);
+  };
+  const up = () => { if (finish(true)) { justDropped = true; setTimeout(() => { justDropped = false; }, 60); } };
+  const cancel = () => finish(false);
+  addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', cancel);
+  if (touch) { addEventListener('touchmove', block, { passive: false }); timer = setTimeout(() => { armed = true; begin(); place({ clientX: sx, clientY: sy }); }, 280); }
+}
+
+function dragKey(event, box) {
+  if (!event.altKey || !['ArrowLeft', 'ArrowRight'].includes(event.key) || !dragRules(box)) return;
+  event.preventDefault();
+  const labels = dragTerms(box), current = state.moves[box.key] ?? box.term;
+  const next = labels[labels.indexOf(current) + (event.key === 'ArrowRight' ? 1 : -1)];
+  if (next) moveBox(box, next, event.currentTarget.getBoundingClientRect());
+  else say(`${box.code} is already in the ${event.key === 'ArrowRight' ? 'last' : 'first'} term it can use.`);
 }
 
 function boardCard(box) {
   const selected = state.boardSel === box.id;
-  return h('li', {}, h('button', { class: `bcard ${box.status}${box.issue ? ' issue' : ''}${selected ? ' sel' : ''}`, type: 'button', 'aria-pressed': String(selected), 'data-fk': `bc-${safeKey(box.id)}`, onclick: () => selectBox(box.id) },
+  const draggable = dragRules(box);
+  return h('li', {}, h('button', { class: `bcard ${box.status}${box.issue ? ' issue' : ''}${selected ? ' sel' : ''}${draggable ? ' drag' : ''}`, type: 'button', 'aria-pressed': String(selected), 'data-fk': `bc-${safeKey(box.id)}`,
+    'aria-keyshortcuts': draggable ? 'Alt+ArrowLeft Alt+ArrowRight' : null,
+    onclick: () => { if (justDropped) return; selectBox(box.id); },
+    onpointerdown: draggable ? event => dragStart(event, box) : null, onkeydown: draggable ? event => dragKey(event, box) : null },
     h('span', { class: 'bc-top' }, h('b', {}, box.code), h('span', { class: 'bc-units' }, `${L.fmtUnits(box.units)} units`)),
     box.title ? h('span', { class: 'bc-title' }, box.title) : null,
     box.req ? h('span', { class: 'bc-req' }, box.req) : null,
-    h('span', { class: 'bc-foot' }, h('span', { class: 'tag' + (box.status === 'open' ? ' warn' : '') }, BOX_LABEL[box.status]), box.issue ? h('span', { class: 'tag bad' }, icon('warn'), 'Prerequisite issue') : null)));
+    h('span', { class: 'bc-foot' }, h('span', { class: 'tag' + (box.status === 'open' ? ' warn' : '') }, BOX_LABEL[box.status]), box.issue ? h('span', { class: 'tag bad' }, icon('warn'), 'Prerequisite issue') : null, draggable ? h('span', { class: 'grip', 'aria-hidden': 'true' }, '⠿') : null)));
 }
 
 function termColumn(term, season) {
   if (!term) return h('div', { class: 'bterm blank', 'aria-hidden': 'true' });
   const now = term.label === NOW_TERM, plan = term.label === PLAN_TERM;
-  return h('section', { class: `bterm${now ? ' current' : ''}${plan ? ' planning' : ''}`, 'aria-labelledby': `bt-${safeKey(term.label)}` },
+  return h('section', { class: `bterm${now ? ' current' : ''}${plan ? ' planning' : ''}`, 'data-term': term.label, 'aria-labelledby': `bt-${safeKey(term.label)}` },
     h('h4', { id: `bt-${safeKey(term.label)}` }, h('span', {}, season), h('span', { class: 'bt-units' }, `${L.fmtUnits(term.units)} units`)),
     now ? h('p', { class: 'tag focus' }, 'Current term') : plan ? h('p', { class: 'tag' }, 'Registering now') : null,
-    h('ul', { class: 'bcards' }, term.boxes.length ? term.boxes.map(boardCard) : h('li', { class: 'muted small' }, 'Nothing here yet.')));
+    h('ul', { class: 'bcards' }, term.boxes.length ? term.boxes.map(box => boardCard({ ...box, term: term.label })) : h('li', { class: 'muted small' }, 'Nothing here yet.')));
 }
 
 function boardDetail(board) {
@@ -1260,10 +1367,11 @@ function renderFour() {
   const plannedUnits = board.terms.filter(t => t.status === 'plan').flatMap(t => t.boxes).filter(b => b.status === 'planned' || b.status === 'registered').reduce((n, b) => n + b.units, 0);
   const yi = Math.min(state.yearIndex ?? Math.max(0, board.years.findIndex(year => year.fall.label === NOW_TERM || year.spring?.label === NOW_TERM || year.spring?.label === PLAN_TERM)), board.years.length - 1);
   const program = [state.major?.name, state.minor?.name].filter(Boolean).join(' + ') || 'No program chosen';
+  const intro = !state.introPlayed; state.introPlayed = true;
   fill(ui.four,
     h('section', { class: 'card tight topbar', 'aria-labelledby': 'fy-h' },
       h('div', { class: 'between' }, h('h2', { id: 'fy-h', class: 'fy-title' }, program), h('button', { class: 'btn light sm', type: 'button', onclick: () => { ui.root.querySelector('.programs')?.setAttribute('open', ''); setView('progress'); } }, 'Change program')),
-      h('p', { class: 'small muted' }, `Catalog year ${state.major?.catalog ?? programIndex?.catalog ?? '2026-2027'} · Target graduation ${board.lastTerm} (units-based projection)`),
+      h('p', { class: 'small muted' }, `Catalog year ${(String(state.major?.catalog ?? programIndex?.catalog ?? '').match(/\d{4}-\d{4}/) ?? ['2026-2027'])[0]} · Target graduation ${board.lastTerm} (from course order and prerequisites)`),
       h('dl', { class: 'figures' },
         h('div', {}, h('dt', {}, 'Earned'), h('dd', {}, unit.earned == null ? 'Not found' : `${L.fmtUnits(unit.earned)} units`)),
         h('div', {}, h('dt', {}, 'Planned'), h('dd', {}, `${L.fmtUnits(plannedUnits)} units this term`)),
@@ -1272,7 +1380,8 @@ function renderFour() {
       h('h3', {}, `${plural(board.issues.length, 'prerequisite issue')}`),
       h('ul', { class: 'list small' }, board.issues.slice(0, 5).map(issue => h('li', {}, h('button', { class: 'btn link-btn', type: 'button', onclick: () => selectBox(issue.id) }, `${issue.code} in ${issue.term}`), `: ${issue.text}`)))) : null,
     h('div', { class: 'yearsel', role: 'group', 'aria-label': 'Choose a year' }, board.years.map(year => h('button', { class: 'chip-btn', type: 'button', 'aria-pressed': String(year.index === yi), onclick: () => { state.yearIndex = year.index; render(); } }, year.label))),
-    h('div', { class: 'years' }, board.years.map(year => h('section', { class: 'byear' + (year.index === yi ? ' sel' : ''), 'aria-labelledby': `by-${year.index}` },
+    h('p', { class: 'dnd-hint small muted' }, h('span', { class: 'grip', 'aria-hidden': 'true' }, '⠿'), ' Drag a dashed tile to another term to rearrange. Keyboard: focus a tile, then Alt + Left or Right.'),
+    h('div', { class: 'years' + (intro ? ' intro' : '') }, board.years.map(year => h('section', { class: 'byear' + (year.index === yi ? ' sel' : ''), 'aria-labelledby': `by-${year.index}` },
       h('h3', { id: `by-${year.index}` }, year.label),
       h('div', { class: 'terms' }, termColumn(year.fall, 'Fall'), termColumn(year.spring, 'Spring'))))),
     boardDetail(board));
@@ -1284,6 +1393,7 @@ function renderHeader() {
   fill(ui.head,
     ui.mark.cloneNode(true),
     h('h2', { tabindex: '-1', 'data-fk': 'title' }, 'Troy', h('b', {}, 'Plan')),
+    drawer ? null : h('p', { class: 'tagline' }, 'Fight on. Four years, one plan.'),
     h('button', { class: `datapill ${demo ? 'demo' : 'live'}`, type: 'button', 'data-fk': 'mode-toggle', 'aria-pressed': String(demo),
       'aria-label': demo ? 'Demo data is on. Switch to live data.' : 'Live data is on. Switch to demo data.', onclick: () => setMode(demo ? 'live' : 'demo') }, demo ? 'Demo data' : 'Live data'),
     drawer ? h('a', { class: 'headlink', href: WEBSITE_URL, target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'Open the TroyPlan website (opens a new tab)' }, h('span', { class: 'long' }, 'Open website'), h('span', { class: 'short' }, 'Website'), icon('out')) : null,

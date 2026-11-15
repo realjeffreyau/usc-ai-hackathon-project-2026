@@ -30,7 +30,7 @@ const outside = (meetings, prefs) => meetings.filter(m => (prefs.morning > 0 && 
 
 // schedule: [{ course, sections }] already on the student's week (registered + planned). Returns viable sections ranked,
 // the courses that do not work with the specific constraint and one action each, and a suggestion if nothing fits.
-export function findGE({ category, courses, ratings = {}, schedule = [], prefs, completed = new Set(), source = 'Sample', ratingLabel = 'Sample rating', unratedNote = 'No rating found for this instructor.', allowSuggestion = true }) {
+export function findGE({ category, courses, ratings = {}, schedule = [], prefs, completed = new Set(), source = 'Sample', ratingLabel = 'Sample rating', unratedNote = 'No rating found for this instructor.', scheduleKnown = true, allowSuggestion = true }) {
   const scheduleUnits = totalUnits(schedule);
   const viable = [], blocked = [];
   for (const course of courses.filter(c => c.ge.includes(category))) {
@@ -95,7 +95,9 @@ export function findGE({ category, courses, ratings = {}, schedule = [], prefs, 
         key: `${course.id}:${bundle.index}`, course, index: bundle.index, sections, units: course.units, tags: course.ge,
         instructor: name, rating: rating ? { ...rating, adjusted: adjustedRating(rating), label: ratingLabel, few: rating.count < 5 } : null,
         canAdd, notes, days,
-        explanation: `Fulfills ${category}, meets ${days}, fits around your ${schedule.length} ${schedule.length === 1 ? 'class' : 'classes'}, and adds ${course.units} units (${unitsAfter} of ${prefs.units}).`,
+        explanation: scheduleKnown
+          ? `Fulfills ${category}, meets ${days}, fits around your ${schedule.length} ${schedule.length === 1 ? 'class' : 'classes'}, and adds ${course.units} units (${unitsAfter} of ${prefs.units}).`
+          : `Fulfills ${category}, meets ${days}, and adds ${course.units} units. Not checked against your registered classes: read myCourseBin first.`,
       });
     }
   }
@@ -113,7 +115,7 @@ export function findGE({ category, courses, ratings = {}, schedule = [], prefs, 
     for (const entry of blocked) for (const reason of entry.reasons) {
       if (!reason.action || suggestion) continue;
       const tryPrefs = { ...prefs, ...reason.action.patch };
-      const trial = findGE({ category, courses, ratings, schedule, prefs: tryPrefs, completed, source, ratingLabel, unratedNote, allowSuggestion: false });
+      const trial = findGE({ category, courses, ratings, schedule, prefs: tryPrefs, completed, source, ratingLabel, unratedNote, scheduleKnown, allowSuggestion: false });
       if (trial.viable.length) suggestion = { ...reason.action, wouldShow: trial.viable.length, course: entry.course };
     }
   }

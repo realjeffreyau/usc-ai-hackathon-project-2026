@@ -29,14 +29,14 @@ The included fictional student lets you explore immediately, without a USC login
 | View | What you can do |
 | --- | --- |
 | **Degree Progress** | Import a STARS PDF or pasted text; review earned, in-progress, and remaining units; select a major and optional minor; find courses for unmet requirements. |
-| **Four-Year Plan** | Inspect courses by term, fill GE slots, move future courses, and see prerequisite warnings and a units-based graduation projection. |
+| **Four-Year Plan** | Inspect courses by term, fill GE slots, drag future courses between terms, inspect prerequisite warnings, and explore a course-order graduation projection. |
 | **Plan Semester** | Describe your preferences, compare GE options, review section bundles and instructor information, and see meetings on a weekly calendar. |
 
 ### A degree plan you can inspect
 
 ![Four-Year Plan with fictional completed courses, current coursework, registered classes, and estimated future terms](docs/images/four-year-plan.png)
 
-Completed, in-progress, registered, planned, and estimated coursework have readable labels. Open a course to inspect its prerequisites or move it to another term. Future terms are planning estimates; published section times are available only for the supported semester snapshot.
+Completed, in-progress, registered, planned, and estimated coursework have readable labels. Open a course to inspect its prerequisites, drag it to another term, or move it with Alt+Left/Right. Future terms are planning estimates; published section times are available only for the supported semester snapshot.
 
 ### Find a course that fits
 
@@ -101,11 +101,12 @@ Read [SECURITY.md](SECURITY.md) for checks and limitations and [THIRD_PARTY.md](
 npm test                 # parser, planning, catalogue, board, privacy, and server checks
 npm run build:extension  # synchronize shared source and bundled assets
 npm run dev              # local preview with shared-module synchronization
-npm run e2e              # standalone workflow, import, network/storage, and viewport checks
+npm run e2e              # website, drag-and-drop, major/minor, GE slots, mobile, and keyboard checks
+node scripts/e2e-privacy.mjs  # PDF/text imports, section conflicts, network/storage, and viewport checks
 npm run e2e:extension    # actual unpacked extension against fictional WebReg pages
 ```
 
-**Verification:** 73 unit/static checks, 12 standalone browser checks, and 8 extension browser checks. Gitleaks found no secrets; the pinned PDF.js dependency audit reported zero known vulnerabilities.
+**Verification:** 76 unit/static checks, 11 website workflow checks, 12 import/privacy workflow checks, and 18 extension browser checks. Gitleaks found no secrets; the pinned PDF.js dependency audit reported zero known vulnerabilities.
 
 Browser checks need a separate Playwright installation. Set `PLAYWRIGHT_CORE` to its package directory and, when needed, `CHROME_PATH` to a compatible full Chrome/Chromium executable. `SHOTS_DIR=docs/images npm run e2e` reproduces the README screenshots from fictional data.
 
@@ -126,5 +127,5 @@ Browser checks need a separate Playwright installation. Set `PLAYWRIGHT_CORE` to
 - Real STARS layouts may differ. Scanned/image PDFs and encrypted reports are unsupported. Missing or ambiguous credits require review.
 - Catalogue requirement extraction is heuristic. Selecting a major does not establish complete degree-rule validation or complete scheduling coverage.
 - Live WebReg prerequisites, clearance, GE categories, and section pairing rules still need confirmation in USC’s systems.
-- Graduation dates are units-based projections. Future offerings, prerequisite chains, and unresolved AP or transfer credit can change them.
+- Degree Progress estimates graduation from remaining units; the Four-Year Plan uses bundled course order and prerequisite rules. These estimates can differ. Future offerings and unresolved AP or transfer credit can change either result.
 - Chrome’s on-device model is optional. The browser checks exercise the rules fallback; they do not establish model-backed success. Chromium was checked; Safari and Firefox were not.

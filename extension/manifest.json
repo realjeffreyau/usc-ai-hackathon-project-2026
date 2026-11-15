@@ -33,11 +33,11 @@
       "resources": [
         "src/*.js",
         "src/panel.css",
+        "src/programs/*.json",
         "src/vendor/pdf.mjs",
         "src/vendor/pdf.worker.mjs",
         "src/vendor/dm-sans.woff2",
-        "icons/*.png",
-        "src/programs/*.json"
+        "icons/*.png"
       ],
       "matches": [
         "https://webreg.usc.edu/*"

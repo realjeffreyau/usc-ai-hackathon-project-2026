@@ -22,7 +22,7 @@ The extension shares WebReg's rendered document. An open shadow root isolates st
 
 ## Publication checks (2026-11-15)
 
-73 unit/static checks, 12 standalone browser checks, and 8 extension browser checks were run with fictional fixtures. Browser checks include PDF import, hostile markup, storage/network assertions, and no registration clicks. Gitleaks 8.30.1 was run with output redacted on both publication files and Git history. No secrets were detected.
+76 unit/static checks, 11 website workflow checks, 12 import/privacy checks, and 18 extension browser checks were run with fictional fixtures. Browser checks include PDF import, hostile markup, storage/network assertions, and no registration clicks. Gitleaks 8.30.1 was run with output redacted on both publication files and Git history. No secrets were detected.
 
 The two vendored PDF.js files match the legacy build in the official npm tarball, whose SHA-512 integrity was verified. A temporary dependency manifest pinned to `pdfjs-dist@6.5.438` was audited with npm: zero known vulnerabilities reported. `npm audit` on this dependency-free app alone would not inspect vendored files. See `THIRD_PARTY.md` for hashes and upstream advisories.
 

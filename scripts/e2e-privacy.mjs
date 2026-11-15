@@ -42,7 +42,7 @@ try {
   ok('fictional audit, separate unit totals, catalogue program, and three main tabs');
   await shot('degree-progress');
   await page.locator('#tp-tab-four').click();
-  await waitText('#tp-view-four', /units-based projection/);
+  await waitText('#tp-view-four', /course order and prerequisites/);
   assert.ok(await page.locator('.bcard').count() > 10);
   await page.locator('.bcard').filter({ hasText: 'MATH 245' }).first().click();
   await page.locator('#bd-head').waitFor();
