@@ -1,0 +1,15 @@
+.git/
+.vercel/
+.env*
+node_modules/
+extension/
+scripts/
+tests/
+docs/
+README.md
+SECURITY.md
+THIRD_PARTY.md
+HANDOFF.md
+*.pdf
+*.zip
+*.log
