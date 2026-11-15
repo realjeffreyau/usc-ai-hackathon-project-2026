@@ -1,0 +1,1 @@
+# usc-ai-hackathon-project-2026
