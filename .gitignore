@@ -23,3 +23,5 @@ screenshots/
 .idea/
 
 # Only reviewed fictional product captures belong in docs/images/.
+
+.vercel/
