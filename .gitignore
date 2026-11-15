@@ -25,3 +25,5 @@ screenshots/
 # Only reviewed fictional product captures belong in docs/images/.
 
 .vercel/
+.vercel
+.env*

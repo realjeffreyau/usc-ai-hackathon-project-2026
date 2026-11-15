@@ -6,8 +6,8 @@ import { start } from './serve.mjs';
 import { browserTools, chromePath, storageState } from './browser-support.mjs';
 import { fictionalAudit, makePdf } from '../tests/pdf-fixture.mjs';
 const { chromium } = browserTools();
-const server = await start(0);
-const origin = `http://127.0.0.1:${server.address().port}`;
+const server = process.env.QA_BASE_URL ? null : await start(0);
+const origin = process.env.QA_BASE_URL ? new URL(process.env.QA_BASE_URL).origin : `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch({ executablePath: chromePath() });
 const context = await browser.newContext({ viewport: { width: 1600, height: 1050 }, serviceWorkers: 'block' });
 await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
@@ -118,5 +118,5 @@ try {
   ok('main views fit mobile and tablet widths');
   console.log(`${checks} browser checks passed.`);
 } finally {
-  await context.close(); await browser.close(); server.closeAllConnections(); await new Promise(r => server.close(r));
+  await context.close(); await browser.close(); if (server) { server.closeAllConnections(); await new Promise(r => server.close(r)); }
 }

@@ -12,7 +12,7 @@ import { DEMO_REGISTERED, GE_COURSES, SAMPLE_RATINGS } from './ge-data.js';
 import { DEMO_PROFILE, EXAMPLES, GE_EXAMPLE, EXAMPLE_PROMPT, demoBin, demoRating } from './fixtures.js';
 
 const HOST_ID = 'trojan-planner-host';
-export const WEBSITE_URL = 'http://127.0.0.1:8080/';
+export const WEBSITE_URL = 'https://troyplan.vercel.app/';
 const LOGO_URL = new URL(import.meta.url).pathname.includes('/src/') ? new URL('../icons/icon48.png', import.meta.url).href : new URL('./icon.png', import.meta.url).href;
 const STATUS = { complete: ['✓', 'Complete'], progress: ['◐', 'In progress'], remaining: ['○', 'Remaining'], planned: ['+', 'Planned'] };
 const UNIT_CHOICES = [8, 10, 12, 14, 15, 16, 17, 18];

@@ -14,7 +14,7 @@ with a clear view of the path to graduation.
 [![Browser memory](https://img.shields.io/badge/Data-Memory_Only-991B2E?style=for-the-badge&labelColor=302623)](#privacy)
 [![WebReg](https://img.shields.io/badge/WebReg-Companion-F4C542?style=for-the-badge&labelColor=302623)](#webreg-companion)
 
-[Get started](#run-locally) · [Explore TroyPlan](#inside-troyplan) · [Privacy](#privacy)
+[Open TroyPlan](https://troyplan.vercel.app) · [Get started](#run-locally) · [Explore TroyPlan](#inside-troyplan) · [Privacy](#privacy)
 
 </div>
 
@@ -81,7 +81,7 @@ The optional Chrome extension presents a two-tab drawer alongside WebReg:
 2. Choose **Load unpacked** and select this repository’s `extension/` folder.
 3. Click the extension icon and choose **Try demo** to rehearse without signing in.
 
-On `https://webreg.usc.edu/*`, **Live** mode can read sections already displayed in myCourseBin or a course list. It does not click Schedule, Register, Drop, or payment controls. Live ratings are not loaded; instructor links open Rate My Professors searches. The drawer’s **Open website** link points to the local app at port 8080.
+On `https://webreg.usc.edu/*`, **Live** mode can read sections already displayed in myCourseBin or a course list. It does not click Schedule, Register, Drop, or payment controls. Live ratings are not loaded; instructor links open Rate My Professors searches. The drawer’s **Open website** link opens [troyplan.vercel.app](https://troyplan.vercel.app).
 
 All state clears on page navigation or refresh. A course-list fit check cannot include registered classes read on a previous page; the UI warns about that limitation. Authenticated USC portal behavior has not been verified.
 

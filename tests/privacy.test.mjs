@@ -31,7 +31,7 @@ test('index.html keeps the strict CSP, no inline code/styles, no third-party hos
     const text = source(name);
     for (const [url] of text.matchAll(/https?:\/\/[^\s'"`)]+/g)) {
       if (url === 'http://www.w3.org/2000/svg' || url === 'http://127.0.0.1:8080/') continue; // SVG namespace, not a network destination
-      assert.match(url, /^https:\/\/(webreg\.usc\.edu|classes\.usc\.edu|arr\.usc\.edu|catalogue\.usc\.edu|www\.ratemyprofessors\.com|www\.w3\.org)/, `${name}: ${url}`);
+      assert.match(url, /^https:\/\/(webreg\.usc\.edu|classes\.usc\.edu|arr\.usc\.edu|troyplan\.vercel\.app|catalogue\.usc\.edu|www\.ratemyprofessors\.com|www\.w3\.org)/, `${name}: ${url}`);
     }
   }
 });
