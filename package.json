@@ -1,0 +1,1 @@
+{"name":"trojan-planner","version":"0.1.0","private":true,"type":"module","scripts":{"start":"node scripts/serve.mjs","dev":"node scripts/dev.mjs","build:extension":"node scripts/build-extension.mjs","test":"node --test \"tests/*.test.mjs\"","e2e":"node scripts/e2e.mjs","e2e:extension":"node scripts/e2e-extension.mjs"}}

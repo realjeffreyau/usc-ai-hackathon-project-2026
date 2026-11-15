@@ -1,0 +1,16 @@
+:root { --cardinal: #8f1d2c; --ink: #231a1a; --muted: #5f5656; --line: #e3dac9; --bg: #fbf7ef; }
+* { box-sizing: border-box; }
+body { margin: 0; width: 320px; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { padding: 16px; display: grid; gap: 10px; }
+header { display: flex; gap: 10px; align-items: center; }
+header img { border-radius: 10px; }
+h1 { margin: 0; font-size: 18px; letter-spacing: -.01em; } h1 b { color: var(--cardinal); }
+header p, .fine { margin: 0; font-size: 12px; color: var(--muted); }
+.lead { margin: 0; }
+button { min-height: 44px; border-radius: 999px; border: 1.5px solid transparent; font: inherit; font-weight: 700; cursor: pointer; }
+.primary { background: var(--cardinal); color: #fffaf1; }
+.primary:hover { filter: brightness(1.1); }
+.light { background: #fff; border-color: var(--line); color: var(--ink); }
+.light:hover { border-color: var(--cardinal); color: var(--cardinal); }
+:focus-visible { outline: 3px solid #b8860b; outline-offset: 2px; }
+#status { margin: 0; min-height: 1.4em; font-size: 13px; font-weight: 600; }

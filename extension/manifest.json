@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "TroyPlan for WebReg",
+  "version": "0.1.0",
+  "description": "Plan your Spring 2027 schedule from your degree progress, right next to WebReg. Unofficial student project. Runs locally and never sends data anywhere.",
+  "minimum_chrome_version": "111",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "TroyPlan",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://webreg.usc.edu/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/*.js",
+        "src/panel.css",
+        "src/vendor/pdf.mjs",
+        "src/vendor/pdf.worker.mjs",
+        "src/vendor/dm-sans.woff2",
+        "icons/*.png",
+        "src/programs/*.json"
+      ],
+      "matches": [
+        "https://webreg.usc.edu/*"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+  }
+}

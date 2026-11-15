@@ -1,0 +1,25 @@
+node_modules/
+.env
+.env.*
+upload/
+uploads/
+*.pdf
+*.zip
+*.tgz
+*.pem
+*.key
+*.p12
+*.pfx
+.DS_Store
+Thumbs.db
+*.log
+coverage/
+playwright-report/
+test-results/
+screenshots/
+.claude/
+.codex/
+.vscode/
+.idea/
+
+# Only reviewed fictional product captures belong in docs/images/.
